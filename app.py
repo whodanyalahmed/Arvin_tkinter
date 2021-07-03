@@ -68,7 +68,6 @@ def Punchin(user_id):
 def Punchout(id):
     sql= 'UPDATE details SET punchout = %s WHERE id = %s'
     cur_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print(cur_date)
     t = (cur_date,id)
     mycur.execute(sql,t)
     db.commit()
@@ -129,6 +128,25 @@ def login():
     Entry(root2, textvariable=password_varify, show="*").pack()
     Label(root2, text="").pack()
     Button(root2, text="Log-In", bg="red",command=login_varify).pack()
+    Label(root2, text="")
+def Admin():
+    global root2
+    root2 = Toplevel(root)
+    root2.title("Admin Portal")
+    root2.geometry("300x300")
+    global admin_username_varify
+    global admin_password_varify
+    Label(root2, text="Admin Portal", bg="grey", fg="black", font="bold",width=300).pack()
+    admin_username_varify = StringVar()
+    admin_password_varify = StringVar()
+    Label(root2, text="").pack()
+    Label(root2, text="Admin Username :", font="bold").pack()
+    Entry(root2, textvariable=admin_username_varify).pack()
+    Label(root2, text="").pack()
+    Label(root2, text="Admin Password :").pack()
+    Entry(root2, textvariable=admin_password_varify, show="*").pack()
+    Label(root2, text="").pack()
+    Button(root2, text="Log-In", bg="red",command=admin_varify).pack()
     Label(root2, text="")
 
 def logg_destroy():
@@ -231,8 +249,6 @@ def logged():
         Entry(logg, textvariable=morning).pack()
         Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(MorningPost,id)).pack()
         morning_d = checkData(id,"morning")[0][0]
-        print(morning_d)
-        print(id)
         if(morning_d == ''):
             pass
         else:
@@ -241,10 +257,10 @@ def logged():
         Label(logg, text="").pack()
         Label(logg, text="Afternoon :", font="bold").pack()
         Entry(logg, textvariable=afternoon).pack()
-        Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold").pack()
+        Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(AfternoonPost,id)).pack()
         
         afternoon_d = checkData(id,"afternoon")[0][0]
-        print(afternoon_d)
+        
         if(afternoon_d == ''):
             pass
         else:
@@ -252,7 +268,59 @@ def logged():
         Label(logg, text="").pack()
         Label(logg, text="Evening :", font="bold").pack()
         Entry(logg, textvariable=evening).pack()
-        Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold").pack()
+        Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(EveningPost,id)).pack()
+        evening_d = checkData(id,"evening")[0][0]
+        if( evening_d == ''):
+            pass
+        else:
+            Label(logg, text="evening added...", fg="green", font="bold").pack()
+        Label(logg, text="").pack()
+        Button(logg, text="Log-Out", bg="grey", width=8, height=1, command=logg_destroy).pack()
+def admin_logged():
+    global logg
+    logg = Toplevel(root)
+    logg.title("Welcome to Admin Portal")
+    logg.geometry("500x500")
+    Label(logg, text="Welcome {} ".format(admin_username_varify.get()), fg="green", font="bold").pack()
+    user_id= getUserId()
+    Button(logg, text="Punch-in", bg="blue", width=8, height=1,command=partial(Punchin,user_id)).pack()
+    punchoutThere= getPunchOut(user_id)
+    id = punchoutThere[0][0]
+    if(punchoutThere == [] ):
+        pass
+    else:
+        Button(logg, text="Punch-Out", bg="red", width=8, height=1,command=partial(Punchout,id)).pack()
+        global morning
+        global afternoon
+        global evening
+        morning = StringVar()
+        afternoon = StringVar()
+        evening = StringVar()
+        Label(logg, text="").pack()
+        Label(logg, text="Morning :", font="bold").pack()
+        Entry(logg, textvariable=morning).pack()
+        Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(MorningPost,id)).pack()
+        morning_d = checkData(id,"morning")[0][0]
+        if(morning_d == ''):
+            pass
+        else:
+            Label(logg, text="morning added...", fg="green", font="bold").pack()
+
+        Label(logg, text="").pack()
+        Label(logg, text="Afternoon :", font="bold").pack()
+        Entry(logg, textvariable=afternoon).pack()
+        Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(AfternoonPost,id)).pack()
+        
+        afternoon_d = checkData(id,"afternoon")[0][0]
+        
+        if(afternoon_d == ''):
+            pass
+        else:
+            Label(logg, text="afternoon added...", fg="green", font="bold").pack()
+        Label(logg, text="").pack()
+        Label(logg, text="Evening :", font="bold").pack()
+        Entry(logg, textvariable=evening).pack()
+        Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(EveningPost,id)).pack()
         evening_d = checkData(id,"evening")[0][0]
         if( evening_d == ''):
             pass
@@ -277,6 +345,21 @@ def login_varify():
             break
     else:
         failed()
+def admin_varify():
+    user_varify = admin_username_varify.get()
+    pas_varify = admin_password_varify.get()
+    sql = "select * from admin where user = %s and password = %s"
+    mycur.execute(sql,[(user_varify),(pas_varify)])
+    results = mycur.fetchall()
+    
+    global user_id  
+    if results:
+        for i in results:
+            admin_logged()
+            user_id = i[0]
+            break
+    else:
+        failed()
 
 
 
@@ -292,6 +375,8 @@ def main_screen():
     Label(root,text="").pack()
     Button(root, text="Registration",height="1",width="15",bg="red",font="bold",command=registration).pack()
     Label(root,text="").pack()
+    Label(root,text="").pack()
+    Button(root,text="Admin",width="8",height="1",bg="blue",font="bold",command=Admin).pack()
     Label(root,text="").pack()
 
 main_screen()
