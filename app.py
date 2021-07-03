@@ -91,6 +91,8 @@ def Ap_destroy():
     Ap.destroy()
 def Ep_destroy():
     Ep.destroy()
+def Sd_destroy():
+    Sd.destroy()
 def registration():
     global root1
     root1 = Toplevel(root)
@@ -276,58 +278,43 @@ def logged():
             Label(logg, text="evening added...", fg="green", font="bold").pack()
         Label(logg, text="").pack()
         Button(logg, text="Log-Out", bg="grey", width=8, height=1, command=logg_destroy).pack()
+def AllData():
+    sql = "SELECT login.user,details.punchin,details.punchout,details.morning,details.afternoon,details.evening FROM login,details  WHERE login.id=details.loginId "
+    mycur.execute(sql)
+    results = mycur.fetchall()
+    return results
+
+def SaveData():
+    results = AllData()
+    with open("Data.txt","w+") as f:
+        for data in results:
+            f.write("=========\n")
+            for d in data:
+                f.write(str(d)+"\n")
+    global Sd
+    Sd = Toplevel(root)
+    Sd.title("Success")
+    Sd.geometry("200x100")
+    Label(Sd, text="Data saved successful...", fg="green", font="bold").pack()
+    Label(Sd, text="").pack()
+    Button(Sd, text="Ok", bg="grey", width=8, height=1, command=Sd_destroy).pack()
 def admin_logged():
     global logg
     logg = Toplevel(root)
     logg.title("Welcome to Admin Portal")
     logg.geometry("500x500")
     Label(logg, text="Welcome {} ".format(admin_username_varify.get()), fg="green", font="bold").pack()
-    user_id= getUserId()
-    Button(logg, text="Punch-in", bg="blue", width=8, height=1,command=partial(Punchin,user_id)).pack()
-    punchoutThere= getPunchOut(user_id)
-    id = punchoutThere[0][0]
-    if(punchoutThere == [] ):
-        pass
-    else:
-        Button(logg, text="Punch-Out", bg="red", width=8, height=1,command=partial(Punchout,id)).pack()
-        global morning
-        global afternoon
-        global evening
-        morning = StringVar()
-        afternoon = StringVar()
-        evening = StringVar()
-        Label(logg, text="").pack()
-        Label(logg, text="Morning :", font="bold").pack()
-        Entry(logg, textvariable=morning).pack()
-        Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(MorningPost,id)).pack()
-        morning_d = checkData(id,"morning")[0][0]
-        if(morning_d == ''):
-            pass
-        else:
-            Label(logg, text="morning added...", fg="green", font="bold").pack()
-
-        Label(logg, text="").pack()
-        Label(logg, text="Afternoon :", font="bold").pack()
-        Entry(logg, textvariable=afternoon).pack()
-        Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(AfternoonPost,id)).pack()
-        
-        afternoon_d = checkData(id,"afternoon")[0][0]
-        
-        if(afternoon_d == ''):
-            pass
-        else:
-            Label(logg, text="afternoon added...", fg="green", font="bold").pack()
-        Label(logg, text="").pack()
-        Label(logg, text="Evening :", font="bold").pack()
-        Entry(logg, textvariable=evening).pack()
-        Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(EveningPost,id)).pack()
-        evening_d = checkData(id,"evening")[0][0]
-        if( evening_d == ''):
-            pass
-        else:
-            Label(logg, text="evening added...", fg="green", font="bold").pack()
-        Label(logg, text="").pack()
-        Button(logg, text="Log-Out", bg="grey", width=8, height=1, command=logg_destroy).pack()
+    results = AllData()
+    
+    Button(logg, text="Print data", bg="purple",foreground="white", width=8, height=1, command=SaveData).pack()
+    for data in results:
+        Label(logg, text="================".format(admin_username_varify.get()), fg="green", font="bold").pack()
+        Label(logg, text="Employee Name: {}".format(data[0]), fg="Black", font="bold").pack()
+        Label(logg, text="PunchIn Time: {}".format(data[1]), fg="Black", font="bold").pack()
+        Label(logg, text="PunchOut Time: {}".format(data[2]), fg="Black", font="bold").pack()
+        Label(logg, text="Morning: {}".format(data[3]), fg="Black", font="bold").pack()
+        Label(logg, text="Afternoon: {}".format(data[4]), fg="Black", font="bold").pack()
+        Label(logg, text="Evening : {}".format(data[5]), fg="Black", font="bold").pack()
 
 
 def login_varify():
