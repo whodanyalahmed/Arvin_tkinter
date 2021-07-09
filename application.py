@@ -6,8 +6,18 @@ import time
 import datetime 
 from functools import partial
 a = datetime.datetime.now()
+
+import sqlite3,sys
+
+def connection():
+    try:
+        conn=sqlite3.connect("database.db")
+    except:
+        print("cannot connect to the database")
+    return conn    
+
 #connecting to the database
-db = mysql.connector.connect(host="localhost",user="root",passwd="",database="logindb")
+db = connection()
 mycur = db.cursor()
 
 def error_destroy():
@@ -44,7 +54,8 @@ def register_user():
     elif password_info == "":
         error()
     else:
-        sql = "insert into login values(0,%s,%s)"
+        mycur.execute("CREATE TABLE IF NOT EXISTS login(ID INTEGER PRIMARY KEY AUTOINCREMENT,USERNAME VARCHAR,PASSWORD VARCHAR)")
+        sql = "insert into login (USERNAME,PASSWORD) values(?,?)"
         t = (username_info, password_info)
         mycur.execute(sql, t)
         db.commit()
@@ -58,7 +69,7 @@ def register_user():
         success()
 
 def Punchin(user_id):
-    sql= 'INSERT INTO details (loginid,punchin) VALUES(%s,%s)'
+    sql= 'INSERT INTO details (loginId,punchin) VALUES(?,?)'
     t = (user_id,a.strftime('%Y-%m-%d %H:%M:%S'))
     mycur.execute(sql,t)
     db.commit()
@@ -71,7 +82,7 @@ def Punchin(user_id):
     Button(pi, text="Ok", bg="grey", width=8, height=1, command=pi_destroy).pack()
 
 def Punchout(id):
-    sql= 'UPDATE details SET punchout = %s WHERE id = %s'
+    sql= 'UPDATE details SET punchout = ? WHERE id = ?'
     cur_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     t = (cur_date,id)
     mycur.execute(sql,t)
@@ -174,20 +185,21 @@ def failed():
     Button(fail, text="Ok", bg="grey", width=8, height=1, command=fail_destroy).pack()
 
 def getUserId():
-    sql = "select id from login where user = %s and password = %s"
+    sql = "select id from login where username = ? and password = ?"
     mycur.execute(sql,[(username_varify.get()),(password_varify.get())])
     results = mycur.fetchall()
     return results[0][0]
 
 
 def getPunchOut(user_id):
+    mycur.execute("CREATE TABLE IF NOT EXISTS Details(ID INTEGER PRIMARY KEY AUTOINCREMENT,loginId INTEGER,PUNCHIN DATETIME,PUNCHOUT DATETIME ,MORNING TEXT,AFTERNOON TEXT,EVENING TEXT, CONSTRAINT fk_departments FOREIGN KEY (loginId) REFERENCES login(loginId))")
     cur_Date = str(datetime.datetime.now().strftime('%Y-%m-%d'))
-    sql = "select id from details where Date(punchin) = %s and loginId = %s"
+    sql = "select id from details where Date(punchin) = ? and loginId = ?"
     mycur.execute(sql,(cur_Date,user_id))
     results = mycur.fetchall()
     return results
 def MorningPost(id):
-    sql= 'UPDATE details SET morning = %s WHERE id = %s'
+    sql= 'UPDATE details SET morning = ? WHERE id = ?'
     morning_data = morning.get()
     t = (morning_data,id)
     mycur.execute(sql,t)
@@ -200,7 +212,7 @@ def MorningPost(id):
     Label(Mp, text="").pack()
     Button(Mp, text="Ok", bg="grey", width=8, height=1, command=Mp_destroy).pack()
 def AfternoonPost(id):
-    sql= 'UPDATE details SET afternoon = %s WHERE id = %s'
+    sql= 'UPDATE details SET afternoon = ? WHERE id = ?'
     afternoon_data = afternoon.get()
     t = (afternoon_data,id)
     mycur.execute(sql,t)
@@ -213,7 +225,7 @@ def AfternoonPost(id):
     Label(Ap, text="").pack()
     Button(Ap, text="Ok", bg="grey", width=8, height=1, command=Ap_destroy).pack()
 def EveningPost(id):
-    sql= 'UPDATE details SET evening = %s WHERE id = %s'
+    sql= 'UPDATE details SET evening = ? WHERE id = ?'
     evening_data = evening.get()
     t = (evening_data,id)
     mycur.execute(sql,t)
@@ -284,7 +296,7 @@ def logged():
         Label(logg, text="").pack()
         Button(logg, text="Log-Out", bg="grey", width=8, height=1, command=logg_destroy).pack()
 def AllData():
-    sql = "SELECT login.user,details.punchin,details.punchout,details.morning,details.afternoon,details.evening FROM login,details  WHERE login.id=details.loginId "
+    sql = "SELECT login.username,details.punchin,details.punchout,details.morning,details.afternoon,details.evening FROM login,details  WHERE login.id=details.loginId "
     mycur.execute(sql)
     results = mycur.fetchall()
     return results
@@ -325,7 +337,7 @@ def admin_logged():
 def login_varify():
     user_varify = username_varify.get()
     pas_varify = password_varify.get()
-    sql = "select * from login where user = %s and password = %s"
+    sql = "select * from login where username =? and password = ?"
     mycur.execute(sql,[(user_varify),(pas_varify)])
     results = mycur.fetchall()
     
@@ -340,7 +352,7 @@ def login_varify():
 def admin_varify():
     user_varify = admin_username_varify.get()
     pas_varify = admin_password_varify.get()
-    sql = "select * from admin where user = %s and password = %s"
+    sql = "select * from admin where username = ? and password = ?"
     mycur.execute(sql,[(user_varify),(pas_varify)])
     results = mycur.fetchall()
     
@@ -370,6 +382,7 @@ def main_screen():
     Label(root,text="").pack()
     Button(root,text="Admin",width="8",height="1",bg="blue",font="bold",command=Admin).pack()
     Label(root,text="").pack()
-
 main_screen()
 root.mainloop()
+
+db.close()
