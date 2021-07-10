@@ -68,32 +68,6 @@ def register_user():
         time.sleep(0.50)
         success()
 
-def Punchin(user_id):
-    sql= 'INSERT INTO details (loginId,punchin) VALUES(?,?)'
-    t = (user_id,a.strftime('%Y-%m-%d %H:%M:%S'))
-    mycur.execute(sql,t)
-    db.commit()
-    global pi
-    pi = Toplevel(root)
-    pi.title("Success")
-    pi.geometry("200x100")
-    Label(pi, text="Punch successful...", fg="green", font="bold").pack()
-    Label(pi, text="").pack()
-    Button(pi, text="Ok", bg="grey", width=8, height=1, command=pi_destroy).pack()
-
-def Punchout(id):
-    sql= 'UPDATE details SET punchout = ? WHERE id = ?'
-    cur_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    t = (cur_date,id)
-    mycur.execute(sql,t)
-    db.commit()
-    global po
-    po = Toplevel(root)
-    po.title("Success")
-    po.geometry("200x100")
-    Label(po, text="Punch successful...", fg="green", font="bold").pack()
-    Label(po, text="").pack()
-    Button(po, text="Ok", bg="grey", width=8, height=1, command=po_destroy).pack()
 
 
 
@@ -189,10 +163,41 @@ def getUserId():
     mycur.execute(sql,[(username_varify.get()),(password_varify.get())])
     results = mycur.fetchall()
     return results[0][0]
+def addEmpty(user_id):
+    sql= 'INSERT INTO details (loginId) VALUES(?)'
+    t = (user_id,)
+    mycur.execute(sql,t)
+    db.commit()
+    print("empty data added")
+def Punchin(user_id):
+    sql= 'UPDATE details SET punchin = ? WHERE id = ?'
+    t = (a.strftime('%Y-%m-%d %H:%M:%S'),user_id)
+    mycur.execute(sql,t)
+    db.commit()
+    global pi
+    pi = Toplevel(root)
+    pi.title("Success")
+    pi.geometry("200x100")
+    Label(pi, text="Punch successful...", fg="green", font="bold").pack()
+    Label(pi, text="").pack()
+    Button(pi, text="Ok", bg="grey", width=8, height=1, command=pi_destroy).pack()
 
+def Punchout(id):
+    sql= 'UPDATE details SET punchout = ? WHERE id = ?'
+    cur_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    t = (cur_date,id)
+    mycur.execute(sql,t)
+    db.commit()
+    global po
+    po = Toplevel(root)
+    po.title("Success")
+    po.geometry("200x100")
+    Label(po, text="Punch successful...", fg="green", font="bold").pack()
+    Label(po, text="").pack()
+    Button(po, text="Ok", bg="grey", width=8, height=1, command=po_destroy).pack()
 
 def getPunchOut(user_id):
-    mycur.execute("CREATE TABLE IF NOT EXISTS Details(ID INTEGER PRIMARY KEY AUTOINCREMENT,loginId INTEGER,PUNCHIN DATETIME,PUNCHOUT DATETIME ,MORNING TEXT,AFTERNOON TEXT,EVENING TEXT, CONSTRAINT fk_departments FOREIGN KEY (loginId) REFERENCES login(loginId))")
+    mycur.execute("CREATE TABLE IF NOT EXISTS details(ID INTEGER PRIMARY KEY AUTOINCREMENT,loginId INTEGER,PUNCHIN DATETIME,PUNCHOUT DATETIME ,MORNING TEXT,AFTERNOON TEXT,EVENING TEXT, CONSTRAINT fk_departments FOREIGN KEY (loginId) REFERENCES login(loginId))")
     cur_Date = str(datetime.datetime.now().strftime('%Y-%m-%d'))
     sql = "select id from details where Date(punchin) = ? and loginId = ?"
     mycur.execute(sql,(cur_Date,user_id))
@@ -201,11 +206,23 @@ def getPunchOut(user_id):
 
 
 def getDetailsId(user_id):
-    mycur.execute("CREATE TABLE IF NOT EXISTS Details(ID INTEGER PRIMARY KEY AUTOINCREMENT,loginId INTEGER,PUNCHIN DATETIME,PUNCHOUT DATETIME ,MORNING TEXT,AFTERNOON TEXT,EVENING TEXT, CONSTRAINT fk_departments FOREIGN KEY (loginId) REFERENCES login(loginId))")
-    cur_Date = str(datetime.datetime.now().strftime('%Y-%m-%d'))
-    sql = "select id from details where Date(punchin) = ? and loginId = ?"
-    mycur.execute(sql,(cur_Date,user_id))
+    mycur.execute("CREATE TABLE IF NOT EXISTS details(ID INTEGER PRIMARY KEY,loginId INTEGER,PUNCHIN DATETIME,PUNCHOUT DATETIME ,MORNING TEXT,AFTERNOON TEXT,EVENING TEXT, CONSTRAINT fk_departments FOREIGN KEY (loginId) REFERENCES login(loginId))")
+    sql = "select id from details where loginId = ?"
+    mycur.execute(sql,(user_id,))
     results = mycur.fetchall()
+    print(results)
+    # try:
+    #     print("in try")
+    #     result = results[0][0]
+    # except Exception as e:
+    #     print("in exception")
+    #     mycur.execute('SELECT id FROM details ORDER BY id DESC LIMIT 1')
+    #     results = mycur.fetchall()
+    #     try:
+    #         result = results[0][0] + 1
+    #     except Exception as e:
+    #         result= 0
+    # print(result)
     return results
     
 
@@ -262,13 +279,19 @@ def logged():
     logg.geometry("500x500")
     Label(logg, text="Welcome {} ".format(username_varify.get()), fg="green", font="bold").pack()
     user_id= getUserId()
-    Button(logg, text="Punch-in", bg="blue", width=8, height=1,command=partial(Punchin,user_id)).pack()
-    DetailsId= getDetailsId(user_id)
+    global id
     try:
-        global id
-        id = DetailsId[0][0]
+        id= getDetailsId(user_id)[0][0]
+        print(id)
     except Exception as e:
-        pass
+        print(e)
+        addEmpty(user_id)
+    finally:
+        id= getDetailsId(user_id)[0][0]
+        print(id)
+
+    Button(logg, text="Punch-in", bg="blue", width=8, height=1,command=partial(Punchin,id)).pack()
+
     Button(logg, text="Punch-Out", bg="red", width=8, height=1,command=partial(Punchout,id)).pack()
     global morning
     global afternoon
@@ -280,40 +303,14 @@ def logged():
     Label(logg, text="Morning :", font="bold").pack()
     Entry(logg, textvariable=morning).pack()
     Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(MorningPost,id)).pack()
-    # try:
-
-    #     morning_d = checkData(id,"morning")[0][0]
-    # except Exception as e:
-    #     morning_d = ''
-    # if(morning_d == ''):
-    #     pass
-    # else:
-    #     Label(logg, text="morning added...", fg="green", font="bold").pack()
-
     Label(logg, text="").pack()
     Label(logg, text="Afternoon :", font="bold").pack()
     Entry(logg, textvariable=afternoon).pack()
     Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(AfternoonPost,id)).pack()
-    # try:
-    #     afternoon_d = checkData(id,"afternoon")[0][0]
-    # except Exception as e:
-    #     afternoon_d = ''
-    # if(afternoon_d == ''):
-    #     pass
-    # else:
-    #     Label(logg, text="afternoon added...", fg="green", font="bold").pack()
     Label(logg, text="").pack()
     Label(logg, text="Evening :", font="bold").pack()
     Entry(logg, textvariable=evening).pack()
     Button(logg, text="Submit",height="1",width="15",bg="Yellow",font="bold",command=partial(EveningPost,id)).pack()
-    # try:
-    #     evening_d = checkData(id,"evening")[0][0]
-    # except Exception as e:
-    #     evening_d = ''
-    # if( evening_d == ''):
-    #     pass
-    # else:
-    #     Label(logg, text="evening added...", fg="green", font="bold").pack()
     Label(logg, text="").pack()
     Button(logg, text="Log-Out", bg="grey", width=8, height=1, command=logg_destroy).pack()
 def AllData():
